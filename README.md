@@ -1,13 +1,11 @@
 <!-- Copyright 2026 Anthropic PBC -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# cwc-workshops
+# AI Agent Using Claude API
 
-Workshop materials. Not maintained and not accepting contributions.
+Built using claude code webinar https://anthropic.ondemand.goldcast.io/on-demand/b984ba77-76c8-41b5-a527-0d6da8a7b2dd
 
-Materials from Anthropic-run **Code with Claude** workshops.
-
-## Workshops
+## Details
 
 - [`rightmodel/`](./rightmodel) — *Picking the Right Model*: use a Claude Code SKILL to audit an LLM eval suite and sweep it across models and inference parameters (extended thinking, effort) to find the best quality-per-dollar and quality-per-second configuration.
 - [`agent-decomposition/`](./agent-decomposition) — *Compose Multi-Agent Systems with Skills and MCP*: decompose a 400-line-prompt inventory agent into skills + code execution + callable_agents on Claude Managed Agents, with evals to verify each step.
@@ -18,7 +16,3 @@ Materials from Anthropic-run **Code with Claude** workshops.
 - [`eval-driven-agent-development/`](./eval-driven-agent-development) — *Eval-Driven Agent Development*: iterate a PPTX-generating Managed Agent through six variants (naive → visual → typography → palette → density → QA-loop), scoring each against a 10-task suite with a two-layer grader (programmatic `.pptx` XML metrics + LLM-as-judge on rendered slides) so every prompt change is measured, not vibed.
 - [`production-ready-agent/`](./production-ready-agent) — *Deal Desk*: a chat-first UI over a multi-agent M&A research team on Claude Managed Agents — a coordinator delegates to four parallel research sub-agents, reads prior-deal lessons from a memory store, reaches Linear via MCP, and emits a graded investment thesis while the UI streams every event and gated tool call.
 - [`research-desk/`](./research-desk) — *The Research Desk*: build an SEC-filings research desk on Claude Managed Agents behind a self-hosted Next.js console — say hello to a bare agent you wire up yourself, then promote that same agent (versioned update) into a head of research that dispatches one analyst session per ticker through a custom tool your server fulfils, with sub-agent specialists, an edgartools Skill, outcome-graded scorecards, a shared memory store, and a weekly memo deployment.
-
-## License
-
-Apache License 2.0. See [LICENSE](./LICENSE).
