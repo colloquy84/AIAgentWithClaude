@@ -1,18 +1,113 @@
 <!-- Copyright 2026 Anthropic PBC -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# AI Agent Using Claude API
+# Incident-2277
 
-Built using claude code webinar https://anthropic.ondemand.goldcast.io/on-demand/b984ba77-76c8-41b5-a527-0d6da8a7b2dd
+> **Workshop sample.** Not maintained and not accepting contributions.
 
-## Details
+> **It's 2am. PagerDuty fires: checkout p99 latency is 10× baseline.**
+> You know the drill — open the dashboard, grep logs, scroll deploys, guess,
+> check, repeat. Forty minutes later you find it: someone shipped an N+1 query.
+>
+> This workshop builds the agent that does that forty minutes for you.
 
-- [`rightmodel/`](./rightmodel) — *Picking the Right Model*: use a Claude Code SKILL to audit an LLM eval suite and sweep it across models and inference parameters (extended thinking, effort) to find the best quality-per-dollar and quality-per-second configuration.
-- [`agent-decomposition/`](./agent-decomposition) — *Compose Multi-Agent Systems with Skills and MCP*: decompose a 400-line-prompt inventory agent into skills + code execution + callable_agents on Claude Managed Agents, with evals to verify each step.
-- [`how-we-claude-code/`](./how-we-claude-code) — *How We Claude Code*: a three-phase walkthrough of an AI-assisted product workflow — interview to spec, four divergent design explorations as static HTML, and a Vite + React app whose components emit a machine-readable DOM contract so an agent (or CI) can verify them at runtime.
-- [`ship-your-first-managed-agent/`](./ship-your-first-managed-agent) — *Ship Your First Managed Agent*: a Streamlit incident dashboard with an offline SRE Agent chat panel. You bring it online by implementing seven small functions in `agent.py`, each a single Claude Managed Agents API call — until it can grep a 70k-line log in its sandbox, call your local tools, and name the bad commit.
-- [`agent-battle/`](./agent-battle) — *Agent Battle*: a 45-minute competition to configure a Claude Managed Agent — system prompt, skills, MCP servers, model — that drives a local game bot over MCP. Most diamonds wins, fewest tokens breaks ties; a fast `--eval` decision-probe loop lets you test config changes in ~30s before committing to a 5-minute run.
-- [`agents-that-remember/`](./agents-that-remember) — *Agents That Remember*: start with a Managed Agent that's visibly amnesiac across sessions, then layer in memory primitives one at a time — a memory store for cross-session persistence, then the Dreaming Service to consolidate past transcripts — going "goldfish to colleague" in 45 minutes.
-- [`eval-driven-agent-development/`](./eval-driven-agent-development) — *Eval-Driven Agent Development*: iterate a PPTX-generating Managed Agent through six variants (naive → visual → typography → palette → density → QA-loop), scoring each against a 10-task suite with a two-layer grader (programmatic `.pptx` XML metrics + LLM-as-judge on rendered slides) so every prompt change is measured, not vibed.
-- [`production-ready-agent/`](./production-ready-agent) — *Deal Desk*: a chat-first UI over a multi-agent M&A research team on Claude Managed Agents — a coordinator delegates to four parallel research sub-agents, reads prior-deal lessons from a memory store, reaches Linear via MCP, and emits a graded investment thesis while the UI streams every event and gated tool call.
-- [`research-desk/`](./research-desk) — *The Research Desk*: build an SEC-filings research desk on Claude Managed Agents behind a self-hosted Next.js console — say hello to a bare agent you wire up yourself, then promote that same agent (versioned update) into a head of research that dispatches one analyst session per ticker through a custom tool your server fulfils, with sub-agent specialists, an edgartools Skill, outcome-graded scorecards, a shared memory store, and a weekly memo deployment.
+A working incident dashboard for a fictional e-commerce stack. The Metrics,
+Logs, and Deploys pages run out of the box from mock data. There's an
+**SRE Agent** chat panel on the side of every page — and it's offline.
+Bringing it online is the workshop: seven small functions in one file, each a
+single [Claude Managed Agents](https://platform.claude.com/docs/en/managed-agents/overview)
+API call.
+
+When you're done, you ask it *"what caused the latency spike?"* and watch it
+grep a 70k-line log inside its own cloud sandbox, call your local tools to
+pull metrics and deploys, correlate the timestamps, fetch the offending diff,
+and name the commit.
+
+## Setup
+
+You need Python **3.10+** and an [Anthropic API key](https://console.anthropic.com/settings/keys).
+
+```bash
+git clone https://github.com/anthropic-experimental/cwc-workshops
+cd cwc-workshops/ship-your-first-managed-agent
+
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+cp .env.example .env               # then put your ANTHROPIC_API_KEY in .env
+streamlit run app.py
+```
+
+The dashboard opens at `localhost:8501`. Click around — Metrics, Logs,
+Deploys all work. The SRE Agent panel on the right says
+*"agent offline — implement `setup_agent()` in `agent.py`"*.
+
+## What you build
+
+Open **`agent.py`**. Seven functions, all `raise NotImplementedError`. Fill them
+in and the panel comes online one step at a time.
+
+| # | Function | API call | Lines |
+|---|---|---|---|
+| 1 | `setup_agent()` | `client.beta.agents.create` | 3 |
+| 2 | `setup_environment()` | `client.beta.environments.create` | 4 |
+| 3 | `upload_log()` | `client.beta.files.upload` | 2 |
+| 4 | `start_session()` | `client.beta.sessions.create` | 5 |
+| 5 | `stream_reply()` | `client.beta.sessions.events.stream` + `.send` | 12 |
+| 6 | `handle_tool()` | runs locally — reads `data/*.json` | 7 |
+| 7 | `delete_session()` | `client.beta.sessions.delete` | 1 |
+
+That's ~34 lines total. Everything else — the system prompt, tool schemas,
+the chat UI, the session picker — is provided in `provided.py`.
+
+Stuck? `agent_complete.py` has the finished versions.
+
+## The incident
+
+`data/` ships a real-feeling outage: at **14:31:18 UTC** commit `a3f9c21`
+deploys to the checkout service, replacing a batched query with a per-row
+loop. Within minutes p99 latency climbs from 65 ms to 3,600 ms, the DB
+connection pool saturates, and 20% of checkouts start failing.
+
+The evidence is spread across:
+
+- `app.log` — 70,000 lines of JSON logs the agent has to grep in its sandbox
+- `metrics.json` / `deploys.json` / `diff.txt` — what `get_metrics`,
+  `get_recent_deploys`, and `get_diff` return when the agent calls them
+  (these handlers run on **your** machine, not the cloud — that's the point)
+
+The agent has to correlate all four to name the root cause. It does.
+
+## What this teaches
+
+- **Agent → Environment → Session → Events** — the four Managed Agents
+  resources, in the order the
+  [quickstart](https://platform.claude.com/docs/en/managed-agents/quickstart)
+  introduces them
+- **Sandboxed code execution** — the agent writes and runs Python in a
+  managed container you never provision
+- **Custom tools** — the agent in the cloud calls functions on your laptop
+  over the event stream; swap the mock JSON for a Datadog client and it's
+  production
+- **Stateful sessions** — the dropdown above the chat lists every past
+  session via `sessions.list()`; pick one and the conversation reloads from
+  `events.list()`. No database, no local state.
+
+## Repo layout
+
+```
+agent.py            ← the only file you edit
+agent_complete.py   ← reference implementation
+provided.py         ← system prompt, tool schemas, chat UI, session picker
+e2e.py              ← headless test of the full path
+
+app.py              ← incident overview
+pages/              ← Metrics, Logs, Deploys
+data/               ← log + metrics + deploys + diff fixtures
+ui.py, assets/      ← styling
+```
+
+## License
+
+MIT

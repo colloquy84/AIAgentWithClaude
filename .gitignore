@@ -1,2 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.venv/
 .DS_Store
-.claude/settings.local.json
+data/app.log
+.claude/
