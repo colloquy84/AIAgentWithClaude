@@ -10,7 +10,7 @@ from ui import inject_style, alert_banner
 from provided import chat_panel
 
 load_dotenv()
-st.set_page_config(page_title="Incident · 2277", page_icon="▮", layout="wide")
+st.set_page_config(page_title="Incident · 92476", page_icon="▮", layout="wide")
 inject_style()
 
 # Generate the synthetic log fixture on first run (~0.5 s, deterministic).
@@ -34,7 +34,7 @@ def overview():
     main, side = st.columns([5, 3], gap="large")
 
     with main:
-        st.title("INCIDENT-2277")
+        st.title("INCIDENT-82476")
         alert_banner()
 
         DATA = Path(__file__).parent / "data"
@@ -43,9 +43,10 @@ def overview():
         peak, base = max(d["value"] for d in p99), p99[0]["value"]
         err = max(d["value"] for d in metrics["checkout"]["error_rate"])
 
-        r1c1, r1c2 = st.columns(2)
+        r1c1, r1c2, r1c3 = st.columns(3)
         r1c1.metric("P99 LATENCY", f"{peak:,.0f} ms", f"{(peak/base-1)*100:+.0f}%", delta_color="inverse")
         r1c2.metric("ERROR RATE", f"{err*100:.1f}%", f"+{err*100:.1f} pp", delta_color="inverse")
+        r1c3.metric("Incident Severity", f"Medium", f"Sev3", delta_color="inverse")
         r2c1, r2c2 = st.columns(2)
         r2c1.metric("DB POOL", "100%", "+90 pp", delta_color="inverse")
         r2c2.metric("DURATION", "28 min", "ongoing")
